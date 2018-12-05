@@ -13,6 +13,14 @@ from sklearn import preprocessing
 from xgboost import XGBRegressor
 from keras import regularizers
 
+
+def MSE(predict, real):
+	error = predict.flatten() - real.flatten()
+	error = np.power(error,2)
+	error = np.sum(error)
+	error = error/len(real)
+	return error
+
 def getData(trainfile,testfile):
 	train_data_features=pd.read_csv(trainfile)
 
@@ -121,15 +129,17 @@ def DenseLayerModel(train_features,train_labels,val_features,val_labels,test_fea
 	            	optimizer=keras.optimizers.Adam(),
 					metrics=['accuracy'])
 
-	pdb.set_trace()
-
 	model.fit(train_features,train_labels,
 				 batch_size=BATCH_SIZE,
 				 epochs=EPOCHS,
 	          	 verbose=1,
 	           	 validation_data=(val_features, val_labels))
 
+	val_predictions = model.predict(val_features,batch_size=BATCH_SIZE)
 
+	val_error = MSE(val_predictions,val_labels)
+
+	print(val_error)
 
 	output = model.predict(test_features,batch_size=BATCH_SIZE)
 
@@ -144,10 +154,16 @@ def DenseLayerModel(train_features,train_labels,val_features,val_labels,test_fea
 	return True
 
 def xgboostmodel(train_features,train_labels,val_features,val_labels,test_features):
-	model = XGBRegressor(max_depth=10,learning_rate=.1,n_estimators=1000,subsample=0.8)
+	model = XGBRegressor(max_depth=8, learning_rate=0.05, n_estimators=166, silent=True,
+    objective='reg:linear', booster='gbtree', n_jobs=10, nthread=None, gamma=0, 
+    min_child_weight=0, max_delta_step=0, subsample=0.8, colsample_bytree=0.8, 
+    colsample_bylevel=0.8, reg_alpha=0, reg_lambda=0, scale_pos_weight=1,
+    base_score=0.5, random_state=0, seed=None, missing=np.nan, importance_type='gain')
 	print("test")
-	pdb.set_trace()
 	model.fit(train_features, train_labels)
+	val_predictions = model.predict(val_features)
+	val_error = MSE(val_predictions,val_labels)
+	print(val_error)
 	predictions = model.predict(test_features)
 	predictions = predictions*100
 
@@ -163,4 +179,4 @@ if __name__ =="__main__":
 
 	x = DenseLayerModel(x_train,y_train,x_val,y_val,x_test)
 
-	#y = xgboostmodel(x_train,y_train,x_val,y_val,x_test)
+	y = xgboostmodel(x_train,y_train,x_val,y_val,x_test)
