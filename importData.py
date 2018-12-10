@@ -4,7 +4,6 @@ import pandas as pd
 import pdb
 import tensorflow as tf
 import keras
-from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Flatten
 from keras import backend as K
@@ -12,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from xgboost import XGBRegressor
 from keras import regularizers
+from sklearn import linear_model
 
 
 def MSE(predict, real):
@@ -41,13 +41,13 @@ def getData(trainfile,testfile):
 
 	train_data_features = train_data_features.drop([5449])
 
-	train_data_features = train_data_features.drop(['RatingYear','BaseYear','Creation_Date','date_calculated','publish_date','ExcludeFromLists',
-							  'Rpt_Comp_Date','Rpt_Comp_Emp','Reader2_Date','Rpt_Ap_Date','Rpt_Ver_Date','Incomplete',
-							  'StatusID','DonorAdvisoryDate','DonorAdvisoryText','ResultsID','DonorAdvisoryCategoryID',
-							  'Tax_Year','Direct_Support','Indirect_Support','Int_Expense','Depreciation',
-							  'Assets_45','Assets_46','Assets_47c','Assets_48c','Assets_49','Assets_54','Liability_60'],axis=1)
+	# train_data_features = train_data_features.drop(['RatingYear','BaseYear','Creation_Date','date_calculated','publish_date','ExcludeFromLists',
+	# 						  'Rpt_Comp_Date','Rpt_Comp_Emp','Reader2_Date','Rpt_Ap_Date','Rpt_Ver_Date','Incomplete',
+	# 						  'StatusID','DonorAdvisoryDate','DonorAdvisoryText','ResultsID','DonorAdvisoryCategoryID',
+	# 						  'Tax_Year','Direct_Support','Indirect_Support','Int_Expense','Depreciation',
+	# 						  'Assets_45','Assets_46','Assets_47c','Assets_48c','Assets_49','Assets_54','Liability_60'],axis=1)
 
-	train_data_features = train_data_features.dropna(axis='columns',how='all')
+	#train_data_features = train_data_features.dropna(axis='columns',how='all')
 
 	train_data_labels = pd.read_csv('trainLabels.csv')
 
@@ -65,7 +65,7 @@ def getData(trainfile,testfile):
 
 	scalar = preprocessing.MinMaxScaler()
 
-	train_features = scalar.fit_transform(train_features)
+	#train_features = scalar.fit_transform(train_features)
 
 	#train_features = train_features.reshape(train_features.shape[0],train_features.shape[1],1)
 
@@ -96,19 +96,19 @@ def getData(trainfile,testfile):
 
 	test_data_features = test_data_features.set_index('ids')
 
-	test_data_features = test_data_features.drop(['RatingYear','BaseYear','Creation_Date','date_calculated','publish_date','ExcludeFromLists',
-							  'Rpt_Comp_Date','Rpt_Comp_Emp','Reader2_Date','Rpt_Ap_Date','Rpt_Ver_Date','Incomplete',
-							  'StatusID','DonorAdvisoryDate','DonorAdvisoryText','ResultsID','DonorAdvisoryCategoryID',
-							  'Tax_Year','Direct_Support','Indirect_Support','Int_Expense','Depreciation',
-							  'Assets_45','Assets_46','Assets_47c','Assets_48c','Assets_49','Assets_54','Liability_60'],axis=1)
+	# test_data_features = test_data_features.drop(['RatingYear','BaseYear','Creation_Date','date_calculated','publish_date','ExcludeFromLists',
+	# 						  'Rpt_Comp_Date','Rpt_Comp_Emp','Reader2_Date','Rpt_Ap_Date','Rpt_Ver_Date','Incomplete',
+	# 						  'StatusID','DonorAdvisoryDate','DonorAdvisoryText','ResultsID','DonorAdvisoryCategoryID',
+	# 						  'Tax_Year','Direct_Support','Indirect_Support','Int_Expense','Depreciation',
+	# 						  'Assets_45','Assets_46','Assets_47c','Assets_48c','Assets_49','Assets_54','Liability_60'],axis=1)
 
-	test_data_features = test_data_features.dropna(axis='columns',how='all')
+	#test_data_features = test_data_features.dropna(axis='columns',how='all')
 
 	test_data_features.erkey = test_data_features.erkey.str.extract('(\d+)', expand=False)
 
 	test_features = test_data_features.values
 
-	test_features = scalar.fit_transform(test_features)
+	#test_features = scalar.fit_transform(test_features)
 
 	return train_features,train_labels,val_features,val_labels,test_features
 
@@ -119,10 +119,13 @@ def DenseLayerModel(train_features,train_labels,val_features,val_labels,test_fea
 	input_shape = (train_features.shape[1],)
 
 	model = Sequential()
-
-	model.add(Dense(32,activation='relu',input_shape=input_shape,kernel_initializer='random_uniform',bias_initializer='zeros'))
-	model.add(Dense(64,activation='relu',kernel_initializer='random_uniform',bias_initializer='zeros',kernel_regularizer=regularizers.l2(0.001)))
-	model.add(Dense(128,activation='relu',kernel_initializer='random_uniform',bias_initializer='zeros'))
+	act = keras.layers.advanced_activations.LeakyReLU()
+	model.add(Dense(32,input_shape=input_shape,kernel_initializer='random_uniform',bias_initializer='zeros'))
+	model.add(act)
+	model.add(Dense(64,kernel_initializer='random_uniform',bias_initializer='zeros',kernel_regularizer=regularizers.l2(0.001)))
+	model.add(act)
+	model.add(Dense(128,kernel_initializer='random_uniform',bias_initializer='zeros',kernel_regularizer=regularizers.l2(0.001)))
+	model.add(act)
 	model.add(Dense(1,activation='sigmoid',kernel_initializer='random_uniform',bias_initializer='zeros'))
 
 	model.compile(loss=keras.losses.mean_squared_error,
@@ -172,11 +175,34 @@ def xgboostmodel(train_features,train_labels,val_features,val_labels,test_featur
 	predict.to_csv('predict.csv')
 	print(predictions)
 
+def linearregressionmodel(train_features,train_labels,val_features,val_labels,test_features):
+	regr = linear_model.LinearRegression(fit_intercept=False,normalize=True)
+	regr.fit(train_features,train_labels)
+	val_predictions = regr.predict(val_features)
+	print(val_predictions)
+	print(val_labels)
+	val_error = MSE(val_predictions,val_labels)
+	print(val_error)
+
+	predictions = regr.predict(test_features)
+	print(predictions)
+	pdb.set_trace()
+	predictions = predictions*100
+
+	predict = pd.DataFrame(predictions)
+
+	predict.to_csv('lreg.csv')
+	print(predictions)
+
+
+
 
 if __name__ =="__main__":
 
 	x_train,y_train,x_val,y_val,x_test = getData("trainFeatures.csv","testFeatures.csv")
 
-	x = DenseLayerModel(x_train,y_train,x_val,y_val,x_test)
+	#x = DenseLayerModel(x_train,y_train,x_val,y_val,x_test)
 
 	y = xgboostmodel(x_train,y_train,x_val,y_val,x_test)
+
+	z = linearregressionmodel(x_train,y_train,x_val,y_val,x_test)
