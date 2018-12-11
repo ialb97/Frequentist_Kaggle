@@ -153,8 +153,9 @@ def DenseLayerModel(train_features,train_labels,val_features,val_labels,test_fea
     print(output)
 
     output = pd.DataFrame(output)
+    output.index += 1
 
-    output.to_csv('dense_layer.csv')
+    output.to_csv('dense_layer.csv',index_label = 'Id', header = ['OverallScore'])
 
     return True
 '''
@@ -191,8 +192,8 @@ def xgboostmodel(train_features,train_labels,val_features,val_labels,test_featur
 
 
     predict = pd.DataFrame(predictions)
-
-    predict.to_csv('xg_boost.csv')
+    predict.index += 1
+    predict.to_csv('xg_boost.csv',index_label = 'Id', header = ['OverallScore'])
     print(predictions)
     
 
@@ -213,6 +214,7 @@ def linearregressionmodel(train_features,train_labels,val_features,val_labels,te
     predict = pd.DataFrame(predictions)
 
     predict.to_csv('lreg.csv')
+    predict.to_csv('lreg.csv',index_label = 'Id', header = ['OverallScore'])
     print(predictions)
 
 def l1_linear_regression(train_features,train_labels,val_features,val_labels,test_features):
@@ -231,7 +233,7 @@ def l1_linear_regression(train_features,train_labels,val_features,val_labels,tes
 
     predict = pd.DataFrame(predictions)
 
-    predict.to_csv('l1_reg.csv')
+    predict.to_csv('l1_reg.csv',index_label = 'Id', header = ['OverallScore'])
     print(predictions)
 
     return 0
@@ -252,7 +254,7 @@ def l2_linear_regression(train_features,train_labels,val_features,val_labels,tes
 
     predict = pd.DataFrame(predictions)
 
-    predict.to_csv('l2_reg.csv')
+    predict.to_csv('l2_reg.csv',index_label = 'Id', header = ['OverallScore'])
     print(predictions)
 
     return 0
@@ -265,7 +267,7 @@ def random_forest_regressor(train_features,train_labels,val_features,val_labels,
 
     predictions = regr.predict(test_features)
     predict = pd.DataFrame(predictions)
-    predict.to_csv('random_forest.csv')
+    predict.to_csv('random_forest.csv',index_label = 'Id', header = ['OverallScore'])
     print(predictions)
     
 
