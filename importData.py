@@ -14,7 +14,7 @@ from xgboost import XGBRegressor
 #from keras import regularizers
 from sklearn import linear_model
 from matplotlib import pyplot
-
+from sklearn.ensemble import RandomForestRegressor
 
 def MSE(predict, real):
     error = predict.flatten() - real.flatten()
@@ -154,7 +154,7 @@ def DenseLayerModel(train_features,train_labels,val_features,val_labels,test_fea
 
     output = pd.DataFrame(output)
 
-    output.to_csv('output.csv')
+    output.to_csv('dense_layer.csv')
 
     return True
 '''
@@ -168,11 +168,8 @@ def xgboostmodel(train_features,train_labels,val_features,val_labels,test_featur
 
     b_model.fit(train_features, train_labels)
     
-    #print(b_model.feature_importances_)
-    #plot
     pyplot.bar(range(len(b_model.feature_importances_)), b_model.feature_importances_)
     #pyplot.show()
-    #selection = SelectFromModel(model, threshold=0.001, prefit=True)
     thresholds = np.sort(b_model.feature_importances_) 
     thresholds1 = np.linspace(0, max(thresholds), len(thresholds))
 
@@ -180,11 +177,10 @@ def xgboostmodel(train_features,train_labels,val_features,val_labels,test_featur
     model = b_model
     selection = SelectFromModel(model, threshold=thresh, prefit=True)
     select_X_train = selection.transform(train_features)
-    print(select_X_train.shape[1])
+    #print(select_X_train.shape[1])
     select_X_val = selection.transform(val_features)
     select_X_test = selection.transform(test_features)
     model.fit(select_X_train, train_labels)
-    #eval_model
  
     val_predictions = model.predict(select_X_val)
     val_error = MSE(val_predictions,val_labels)
@@ -196,7 +192,7 @@ def xgboostmodel(train_features,train_labels,val_features,val_labels,test_featur
 
     predict = pd.DataFrame(predictions)
 
-    predict.to_csv('predict.csv')
+    predict.to_csv('xg_boost.csv')
     print(predictions)
     
 
@@ -235,7 +231,7 @@ def l1_linear_regression(train_features,train_labels,val_features,val_labels,tes
 
     predict = pd.DataFrame(predictions)
 
-    predict.to_csv('lreg1.csv')
+    predict.to_csv('l1_reg.csv')
     print(predictions)
 
     return 0
@@ -256,10 +252,23 @@ def l2_linear_regression(train_features,train_labels,val_features,val_labels,tes
 
     predict = pd.DataFrame(predictions)
 
-    predict.to_csv('lreg2.csv')
+    predict.to_csv('l2_reg.csv')
     print(predictions)
 
     return 0
+
+def random_forest_regressor(train_features,train_labels,val_features,val_labels,test_features):
+    regr = RandomForestRegressor(max_depth=2, random_state=0, n_estimators=100)
+    regr.fit(train_features, train_labels)
+    val_predictions = regr.predict(val_features)
+    val_error = MSE(val_predictions, val_labels)
+
+    predictions = regr.predict(test_features)
+    predict = pd.DataFrame(predictions)
+    predict.to_csv('random_forest.csv')
+    print(predictions)
+    
+
 if __name__ =="__main__":
     x_train,y_train,x_val,y_val,x_test = getData("trainFeatures.csv","testFeatures.csv")
 
@@ -267,9 +276,11 @@ if __name__ =="__main__":
 
     y = xgboostmodel(x_train,y_train,x_val,y_val,x_test)
 
-    #z = linearregressionmodel(x_train,y_train,x_val,y_val,x_test)
+    z = linearregressionmodel(x_train,y_train,x_val,y_val,x_test)
 
-    #a = l1_linear_regression(x_train,y_train,x_val,y_val,x_test)
+    a = l1_linear_regression(x_train,y_train,x_val,y_val,x_test)
     
-    #b = l2_linear_regression(x_train,y_train,x_val,y_val,x_test)
+    b = l2_linear_regression(x_train,y_train,x_val,y_val,x_test)
+    
+    c = random_forest_regressor(x_train,y_train,x_val,y_val,x_test)
 
