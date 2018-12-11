@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import pdb
+
 #import tensorflow as tf
 #import keras
 #from keras.models import Sequential
@@ -15,6 +16,8 @@ from xgboost import XGBRegressor
 from sklearn import linear_model
 from matplotlib import pyplot
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.decomposition import PCA
+
 
 def MSE(predict, real):
     error = predict.flatten() - real.flatten()
@@ -111,6 +114,7 @@ def getData(trainfile,testfile):
     test_features = test_data_features.values
 
     #test_features = scalar.fit_transform(test_features)
+    #print(train_features.shape)
 
     return train_features,train_labels,val_features,val_labels,test_features
 '''
@@ -196,7 +200,6 @@ def xgboostmodel(train_features,train_labels,val_features,val_labels,test_featur
     predict.to_csv('xg_boost.csv',index_label = 'Id', header = ['OverallScore'])
     print(predictions)
     
-
 def linearregressionmodel(train_features,train_labels,val_features,val_labels,test_features):
     regr = linear_model.LinearRegression(fit_intercept=False,normalize=True)
     regr.fit(train_features,train_labels)
@@ -270,6 +273,23 @@ def random_forest_regressor(train_features,train_labels,val_features,val_labels,
     predict.to_csv('random_forest.csv',index_label = 'Id', header = ['OverallScore'])
     print(predictions)
     
+def pca_random_forest_regressor(train_features,train_labels,val_features,val_labels,test_features):
+    pca = PCA(0.95)
+    pca.fit(train_features)
+
+    train = pca.transform(train_features)
+    val = pca.transform(val_features)
+    test = pca.transform(test_features)
+
+    regr = RandomForestRegressor(max_depth=2, random_state=0, n_estimators=100)
+    regr.fit(train, train_labels)
+    val_predictions = regr.predict(val)
+    val_error = MSE(val_predictions, val_labels)
+
+    predictions = regr.predict(test)
+    predict = pd.DataFrame(predictions)
+    predict.to_csv('pca_random_forest.csv',index_label = 'Id', header = ['OverallScore'])
+    print(predictions)
 
 if __name__ =="__main__":
     x_train,y_train,x_val,y_val,x_test = getData("trainFeatures.csv","testFeatures.csv")
@@ -285,4 +305,6 @@ if __name__ =="__main__":
     b = l2_linear_regression(x_train,y_train,x_val,y_val,x_test)
     
     c = random_forest_regressor(x_train,y_train,x_val,y_val,x_test)
+
+    cc = pca_random_forest_regressor(x_train,y_train,x_val,y_val,x_test)
 
